@@ -1,6 +1,6 @@
 import {SceneAnimations} from './animations.js?v=full-motion-v8';
 import {guests, defaultGreeting, event} from './config.js';
-import {AudioController} from './audio.js';
+import {AudioController} from './audio.js?v=audio-retry-v10';
 import {ImageLoader, sceneImages} from './assets.js?v=keypad-v6';
 import {safeKeys, safeDisplay, safeGeometry, safeFit} from './safe-controls.js?v=keypad-v6';
 const storage={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{console.warn('Local storage is unavailable.');}}};

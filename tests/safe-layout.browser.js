@@ -183,6 +183,18 @@ async function runViewport(width,height){
   await inspectScene(doc,win,width,height,'Integrated OK guidance');
   key('enter');check(!doc.querySelector('.safe-art.unlocked'),'Wrong code opened safe');
   check(doc.querySelector('.safe-status').textContent.includes('Код не подошёл'),'Missing wrong-code feedback');
+  const originalSafe=doc.querySelector('.safe-art');
+  for(const wrong of ['98','12','98']){
+   for(const digit of wrong){
+    const button=doc.querySelector(`[data-key="${digit}"]`);
+    button.dispatchEvent(new win.Event('touchend',{bubbles:true}));button.click();
+   }
+   check(doc.querySelector('.code-display').textContent===wrong.split('').join(' '),'Immediate wrong-code retry dropped input');
+   key('enter');
+   check(doc.querySelector('.code-display').textContent==='— —','Wrong attempt failed to clear');
+   check(doc.querySelector('.safe-art')===originalSafe&&frame.contentDocument===doc,'Wrong attempt reset the scene/page');
+   check(!doc.querySelector('.safe-controls button:disabled'),'Wrong attempt locked keypad');
+  }
   for(const digit of '0123456789'){
    key('clear');key(digit);check(doc.querySelector('.code-display').textContent===`${digit} —`,'Digit/display mismatch');
   }

@@ -49,6 +49,6 @@ assert.ok(Math.abs(safeDisplay.x/100*1046-520.5)<.001);
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 assert.match(index,/href="styles\.css\?v=full-motion-v8"/);
-assert.match(index,/src="app\.js\?v=full-motion-v8"/);
+assert.match(index,/src="app\.js\?v=audio-retry-v10"/);
 assert.match(app,/from '\.\/assets\.js\?v=keypad-v6'/);
 console.log('PASS: fresh content-versioned WebP/PNG URLs, exact RGBA equality, transparency, 1046×1504 dimensions, cabinet alignment and reserved door space at 320/375/390/400/430px, and versioned module/CSS references. Geometry checks are not browser rendering tests.');
