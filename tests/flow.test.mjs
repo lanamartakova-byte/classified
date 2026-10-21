@@ -16,9 +16,9 @@ for(const choice of [0,1]){
  t.run("saved={rsvp:saved.rsvp};question=0;detector()");assert.equal(t.run('saved.rsvp'),true);assert.equal(t.run('saved.progress'),'detector');
 }
 for(const search of ['', '?guest=unknown','?guest=%3Cscript%3E'])assert.match(boot(search).get('#main').innerHTML,/Дорогой мой человек!/);
-assert.equal(readFileSync(new URL('../styles.css',import.meta.url),'utf8').includes('prefers-reduced-motion'),true);
+assert.equal(readFileSync(new URL('../styles.css',import.meta.url),'utf8').includes('prefers-reduced-motion'),false);
 assert.equal(source.includes('invitation_preview.png'),false);
-console.log('PASS: both answer paths, verdict gates, report, wrong/correct code, deletion, unlock, flip, event copy, RSVP, returning guests, guest isolation, restart state, neutral fallback, reduced-motion rule, reference exclusion.');
+console.log('PASS: both answer paths, verdict gates, report, wrong/correct code, deletion, unlock, flip, event copy, RSVP, returning guests, guest isolation, restart state, neutral fallback, preference-independent animation rules, reference exclusion.');
 
 const expected = {
   mama: 'Мамочка!', papa: 'Папочка!', tamara: 'Тамара!', zhanna: 'Жанна!',

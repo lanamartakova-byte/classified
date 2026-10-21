@@ -1,4 +1,4 @@
-import {SceneAnimations} from './animations.js?v=motion-v7';
+import {SceneAnimations} from './animations.js?v=full-motion-v8';
 import {guests, defaultGreeting, event} from './config.js';
 import {AudioController} from './audio.js';
 import {ImageLoader, sceneImages} from './assets.js?v=keypad-v6';
@@ -10,7 +10,6 @@ const key=`op45:guest:${encodeURIComponent(guestId)}`;
 let saved={};try{saved=JSON.parse(storage.get(key)||'{}')||{};}catch{}
 const audio=new AudioController(storage), main=document.querySelector('#main');
 const animations=new SceneAnimations();
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let stage='intro',question=0,answered=false,code='',locked=false,openingTimer;
 const artwork = new ImageLoader();
 let loadingJob = null;
@@ -135,7 +134,7 @@ function keypad(value, interaction=false){
 }
 
 function unlock(){locked=true;document.querySelectorAll('.safe-controls button').forEach(b=>b.disabled=true);withArtwork(['safeOpen','front','back'],()=>revealSafe());}
-function revealSafe(){save('unlocked');document.querySelector('.safe-closed-frame').setAttribute('aria-hidden','true');document.querySelector('.safe-open').setAttribute('aria-hidden','false');document.querySelector('.safe-open').src=artwork.url('safeOpen');document.querySelector('.emerging').src=artwork.url('front');document.querySelector('.safe-status').textContent='Доступ разрешён. Секрет становится ближе…';audio.sfx('transition');document.querySelector('.safe-art').classList.add('unlocked');openingTimer=setTimeout(()=>invitation(false),reduced?400:3000);}
+function revealSafe(){save('unlocked');document.querySelector('.safe-closed-frame').setAttribute('aria-hidden','true');document.querySelector('.safe-open').setAttribute('aria-hidden','false');document.querySelector('.safe-open').src=artwork.url('safeOpen');document.querySelector('.emerging').src=artwork.url('front');document.querySelector('.safe-status').textContent='Доступ разрешён. Секрет становится ближе…';audio.sfx('transition');document.querySelector('.safe-art').classList.add('unlocked');openingTimer=setTimeout(()=>invitation(false),3000);}
 const icon=(type)=>`<svg viewBox="0 0 24 24" aria-hidden="true">${type==='date'?'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 11h18M7 15h2m3 0h2m3 0h2M7 18h2m3 0h2"/>':type==='time'?'<circle cx="12" cy="12" r="9"/><path d="M12 5v7l4 3"/>':'<path d="M19 10c0 6-7 12-7 12S5 16 5 10a7 7 0 1114 0Z"/><circle cx="12" cy="9" r="2.5"/>'}</svg>`;
 function invitation(direct){if(!['front','back'].every(id=>artwork.ready(id)))return withArtwork(['front','back'],()=>invitation(direct),direct);stage='invitation';document.body.classList.add('celebration');save('invitation');render(`<section class="scene final-scene">${eyebrow('Секрет раскрыт · Только для тебя')}<div class="card-viewport"><div class="card-stage"><div class="card"><button class="card-face card-front" data-action="flip" aria-label="Открыть приглашение"><img src="${artwork.url('front')}" alt="ПРИГЛАШЕНИЕ — лицевая сторона"></button><div class="card-face card-back" aria-hidden="true"><img src="${artwork.url('back')}" alt="Декоративная оборотная сторона приглашения"><div class="card-copy" data-long-greeting="${greeting.length>14}"><p class="card-greeting">${esc(greeting)}</p><h2 class="card-title">Мне скоро <strong>45!</strong></h2><div class="card-rule" aria-hidden="true">♡</div><p class="card-message">Приглашаю тебя отпраздновать мой юбилей с самыми близкими мне людьми!</p><div class="card-rule" aria-hidden="true">❧</div><div class="event"><div>${icon('date')}<span>${esc(event.date)} (${esc(event.time)})</span></div><div class="address">${icon('address')}<span>${esc(event.address)}</span></div></div><div class="card-rule" aria-hidden="true">♡</div></div></div></div></div><div class="invitation-actions"><p class="tap-label">Нажмите, чтобы открыть</p><div class="final-controls" hidden></div></div></div></section>`);if(direct)flip();}
 function celebrate(){animations.celebrate();}
@@ -159,7 +158,7 @@ function confirmation(){
   celebrate();
 }
 
-function flip(){if(document.querySelector('.card').classList.contains('flipped'))return;audio.sfx('transition');audio.start('celebration');document.querySelector('.card').classList.add('flipped');document.querySelector('.card-front').disabled=true;document.querySelector('.card-front').setAttribute('aria-hidden','true');document.querySelector('.card-back').setAttribute('aria-hidden','false');document.querySelector('.tap-label').hidden=true;celebrate();setTimeout(finalControls,reduced?0:1000);}
+function flip(){if(document.querySelector('.card').classList.contains('flipped'))return;audio.sfx('transition');audio.start('celebration');document.querySelector('.card').classList.add('flipped');document.querySelector('.card-front').disabled=true;document.querySelector('.card-front').setAttribute('aria-hidden','true');document.querySelector('.card-back').setAttribute('aria-hidden','false');document.querySelector('.tap-label').hidden=true;celebrate();setTimeout(finalControls,1000);}
 main.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||loadingJob)return;if(b.dataset.answer!==undefined){answer(Number(b.dataset.answer));return;}if(b.dataset.key){keypad(b.dataset.key,true);return;}switch(b.dataset.action){case'accept':case'restart':clearTimeout(openingTimer);saved={rsvp:saved.rsvp};question=0;audio.start('spy');audio.sfx('transition');detector();break;case'continue':audio.sfx(question===2?'transition':'click');if(question<2){question++;detector();}else report();break;case'safe':audio.sfx('transition');safe();break;case'flip':flip();break;case'direct':invitation(true);break;case'rsvp':if(stage!=='invitation'||saved.rsvp)return;audio.sfx();saved.rsvp=true;save('invitation');confirmation();break;case'confirmation':if(!saved.rsvp)return;audio.sfx();confirmation();break;}});
 document.addEventListener('keydown',e=>{
   if(stage!=='safe'||locked||loadingJob||e.altKey||e.ctrlKey||e.metaKey)return;

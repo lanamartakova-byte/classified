@@ -87,7 +87,7 @@ assert.equal(opening.run('locked'),false);assert.equal(pending.length,0,'Digit e
 const press=value=>{openingClock.time+=250;opening.get('#main').listeners.click({target:{closest:()=>({dataset:{key:value},disabled:false})}})};
 press('enter');
 assert.equal(opening.run('stage'),'safe');assert.equal(opening.run('locked'),true);
-assert.equal(pending.length,1);assert.equal(pending[0].delay,400);
+assert.equal(pending.length,1);assert.equal(pending[0].delay,3000);
 const calls=opening.calls.length;
 for(const value of ['enter','enter','1','clear','delete'])press(value);
 assert.equal(pending.length,1,'Repeated OK must not schedule duplicate reveals');

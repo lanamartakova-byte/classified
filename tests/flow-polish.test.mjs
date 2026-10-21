@@ -17,8 +17,8 @@ const art=visitor.get('.safe-art');
 visitor.run('keypad("4");keypad("5")');
 timers.advance(5000);assert.equal(visitor.run('locked'),false);assert.equal(visitor.run('stage'),'safe');
 visitor.run('keypad("enter")');assert.equal(visitor.run('locked'),true);assert.equal(art.classList.contains('unlocked'),true);
-timers.advance(400);assert.equal(visitor.run('stage'),'invitation');
-visitor.run('flip()');timers.advance(0);
+timers.advance(3000);assert.equal(visitor.run('stage'),'invitation');
+visitor.run('flip()');timers.advance(1000);
 assert.match(visitor.get('.final-controls').innerHTML,/data-action="rsvp"/);assert.doesNotMatch(visitor.get('.final-controls').innerHTML,/Ура!|confirmation/);
 const starts=visitor.calls.filter(call=>call==='celebration').length;
 const click=action=>visitor.get('#main').listeners.click({target:{closest:()=>({disabled:false,dataset:{action}})}});
@@ -32,10 +32,10 @@ assert.equal(visitor.calls.filter(call=>call==='celebration').length,starts,'Con
 const record=JSON.parse(visitor.persist.get('op45:guest:katya'));assert.equal(record.rsvp,true);assert.equal(record.progress,'invitation');
 assert.equal(html.includes(event.confirmation.split('До встречи')[0].trim()),true);
 // The lightweight fixture does not parse replacement HTML; model the fresh card element.
-visitor.elements.delete('.card');click('direct');timers.advance(0);assert.equal(visitor.run('stage'),'invitation');assert.match(visitor.get('.final-controls').innerHTML,/Посмотреть подтверждение/);assert.doesNotMatch(visitor.get('.final-controls').innerHTML,/data-action="rsvp"/);
+visitor.elements.delete('.card');click('direct');timers.advance(1000);assert.equal(visitor.run('stage'),'invitation');assert.match(visitor.get('.final-controls').innerHTML,/Посмотреть подтверждение/);assert.doesNotMatch(visitor.get('.final-controls').innerHTML,/data-action="rsvp"/);
 click('confirmation');assert.equal(visitor.run('stage'),'confirmation');assert.equal(JSON.parse(visitor.persist.get('op45:guest:katya')).rsvp,true);
 const returning=boot('?guest=katya',visitor.persist);assert.match(returning.get('#main').innerHTML,/Посмотреть приглашение/);returning.run('invitation(true)');assert.match(returning.get('#main').innerHTML,/Катя!/);assert.match(returning.get('.final-controls').innerHTML,/Посмотреть подтверждение/);
 const other=boot('?guest=nina',visitor.persist);assert.doesNotMatch(other.get('#main').innerHTML,/Посмотреть приглашение/);
 const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
-assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);assert.match(css,/animation:none!important/);
+assert.doesNotMatch(css,/prefers-reduced-motion|animation:none!important/);
 console.log('PASS: integrated OK required after two digits, separate confirmation without art, one RSVP action, split configured message, audio continuity, returning access and guest-isolated persistence.');

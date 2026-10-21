@@ -1,24 +1,17 @@
 // CSS owns frame rendering. This controller owns scene, visibility and cleanup.
 export class SceneAnimations {
   constructor({document=globalThis.document,window=globalThis.window,
-    motion=globalThis.matchMedia('(prefers-reduced-motion: reduce)'),
     clock=globalThis.performance,schedule=(fn,delay)=>globalThis.setTimeout(fn,delay),cancel=id=>globalThis.clearTimeout(id)}={}) {
-    this.document=document;this.window=window;this.motion=motion;this.clock=clock;
+    this.document=document;this.window=window;this.clock=clock;
     this.schedule=schedule;this.cancel=cancel;this.box=document.querySelector('#effects');
     this.scene='';this.timer=null;this.remaining=0;this.celebrating=false;
-    this.pageHidden=false;this.paused=false;this.reduced=motion.matches;
+    this.pageHidden=false;this.paused=false;
     this.onVisibility=()=>this.syncVisibility();
     this.onPageHide=()=>{this.pageHidden=true;this.syncVisibility();};
     this.onPageShow=()=>{this.pageHidden=false;this.syncVisibility();};
-    this.onMotion=()=>{
-      this.reduced=this.motion.matches;this.labelECG();
-      if(this.celebrating)this.celebrate();
-    };
     document.addEventListener('visibilitychange',this.onVisibility);
     window.addEventListener('pagehide',this.onPageHide);
     window.addEventListener('pageshow',this.onPageShow);
-    if(motion.addEventListener)motion.addEventListener('change',this.onMotion);
-    else motion.addListener?.(this.onMotion);
     this.syncVisibility();
   }
   setScene(scene) {
@@ -28,7 +21,7 @@ export class SceneAnimations {
     if(this.scene!=='detector')return;
     const ecg=this.document.querySelector('.ecg');
     ecg?.setAttribute('role','img');
-    ecg?.setAttribute('aria-label',this.reduced?'Сигнал детектора. Движение отключено в настройках устройства.':'Движущийся сигнал детектора.');
+    ecg?.setAttribute('aria-label','Движущийся сигнал детектора.');
   }
   syncVisibility() {
     const paused=Boolean(this.document.hidden||this.pageHidden);
@@ -39,7 +32,7 @@ export class SceneAnimations {
       this.remaining=Math.max(0,this.remaining-(this.clock.now()-this.started));
     }
     this.paused=paused;
-    if(!paused&&this.celebrating&&!this.reduced&&this.timer===null)this.armCleanup();
+    if(!paused&&this.celebrating&&this.timer===null)this.armCleanup();
   }
   armCleanup() {
     this.started=this.clock.now();
@@ -49,7 +42,6 @@ export class SceneAnimations {
     this.stopCelebration();
     if(!['invitation','confirmation'].includes(this.scene))return;
     this.celebrating=true;
-    if(this.reduced){this.box.classList.add('celebration-still');return;}
     const width=this.window.innerWidth,height=this.window.innerHeight;
     const radius=Math.min(56,width*.10,height*.07);
     // Keep bursts at the outer edges, behind the foreground text and controls.
@@ -74,15 +66,13 @@ export class SceneAnimations {
   stopCelebration() {
     if(this.timer!==null)this.cancel(this.timer);
     this.timer=null;this.remaining=0;this.celebrating=false;
-    this.box.replaceChildren();this.box.classList.remove('celebration-still');
+    this.box.replaceChildren();
   }
   destroy() {
     this.stopCelebration();
     this.document.removeEventListener('visibilitychange',this.onVisibility);
     this.window.removeEventListener('pagehide',this.onPageHide);
     this.window.removeEventListener('pageshow',this.onPageShow);
-    if(this.motion.removeEventListener)this.motion.removeEventListener('change',this.onMotion);
-    else this.motion.removeListener?.(this.onMotion);
     this.document.body.classList.remove('animations-paused');
   }
 }

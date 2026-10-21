@@ -37,8 +37,7 @@ async function run(width,height){
   await sleep(750);bounds(doc,win);
   const path=doc.querySelector('.ecg path'),track=doc.querySelector('.ecg-track');
   const start=point(path);await sleep(350);const end=point(path);
-  if(reduced){check(Math.abs(start.x-end.x)<.5,'ECG moved under reduced motion');check(doc.querySelector('.ecg').getAttribute('aria-label').includes('отключено'),'Missing static ECG description')}
-  else{
+  {
    check(Math.abs(start.x-end.x)>2,'ECG screen position is frozen');
    const animation=track.getAnimations().find(a=>a.animationName==='pulse-line');check(animation,'No ECG animation');
    const time=animation.currentTime;
@@ -49,7 +48,7 @@ async function run(width,height){
    check(animation.currentTime>time+100,'ECG failed to resume');
    check(track.getAnimations().filter(a=>a.animationName==='pulse-line').length===1,'Duplicate ECG timelines');
   }
-  output.textContent+=`  ${width}×${height}: ECG ${reduced?'static alternative':'screen x '+start.x.toFixed(1)+' → '+end.x.toFixed(1)}.\n`;
+  output.textContent+=`  ${width}×${height}: ECG ${'screen x '+start.x.toFixed(1)+' → '+end.x.toFixed(1)}.\n`;
   await inspect(`${width}×${height} detector`);
   for(let question=0;question<3;question++){
    click('[data-answer="0"]');check(doc.querySelector('.ecg.answered'),'Answer color state lost');
@@ -65,8 +64,7 @@ async function run(width,height){
   const effects=doc.querySelector('#effects');
   check(win.getComputedStyle(effects).pointerEvents==='none','Effects intercept input');
   check(Number(win.getComputedStyle(effects).zIndex)<Number(win.getComputedStyle(doc.querySelector('main')).zIndex),'Fireworks above foreground message');
-  if(reduced){check(effects.classList.contains('celebration-still')&&!effects.children.length,'Missing reduced-motion still treatment')}
-  else{
+  {
    check(effects.querySelectorAll('.firework-spark').length===48,'Wrong burst count / duplicate generation');
    const spark=effects.querySelector('.firework-spark');
    await sleep(180);const first=spark.getBoundingClientRect(),opacity=Number(win.getComputedStyle(spark).opacity);
@@ -80,12 +78,12 @@ async function run(width,height){
    }
    await waitFor(()=>!effects.children.length,'fireworks cleanup');
   }
-  output.textContent+=`  ${width}×${height}: RSVP ${reduced?'still treatment':'particle motion, opacity, cleanup'} passed.\n`;
+  output.textContent+=`  ${width}×${height}: RSVP particle motion, opacity, cleanup passed.\n`;
   await inspect(`${width}×${height} confirmation (return below to replay)`);
   // A second confirmation must create a new finite generation, not stack old nodes.
   click('[data-action="direct"]');await waitFor(()=>doc.querySelector('[data-action="confirmation"]'),'saved invitation');
-  click('[data-action="confirmation"]');check(effects.children.length===(reduced?0:48),'Repeated confirmation duplicates or loses effects');
-  if(!reduced)await waitFor(()=>!effects.children.length,'second cleanup');
+  click('[data-action="confirmation"]');check(effects.children.length===48,'Repeated confirmation duplicates or loses effects');
+  await waitFor(()=>!effects.children.length,'second cleanup');
   bounds(doc,win);passed=true;
   output.textContent+=`PASS ${width}×${height}: current preference=${reduced?'reduce':'no-preference'}; repeated confirmation and layout bounds.\n`;
  }finally{

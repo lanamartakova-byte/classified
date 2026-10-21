@@ -30,10 +30,8 @@ advance(2599);assert.equal(box.children.length,48);advance(1);assert.equal(box.c
 controller.celebrate();win.emit('pagehide');assert.equal(tasks.size,0);win.emit('pageshow');assert.equal(tasks.size,1);
 controller.setScene('safe');assert.equal(box.children.length,0);assert.equal(tasks.size,0);
 controller.setScene('confirmation');controller.celebrate();motion.matches=true;motion.emit('change');
-assert.equal(box.children.length,0);assert.ok(box.classList.contains('celebration-still'));assert.equal(tasks.size,0);
-controller.setScene('detector');assert.match(ecg.attrs['aria-label'],/отключено/);
-controller.setScene('confirmation');controller.celebrate();assert.ok(box.classList.contains('celebration-still'));
-motion.matches=false;motion.emit('change');assert.equal(box.children.length,48);assert.equal(tasks.size,1);
+assert.equal(box.children.length,48);assert.equal(tasks.size,1);
+controller.setScene('detector');assert.match(ecg.attrs['aria-label'],/Движущийся/);
 controller.destroy();assert.equal(box.children.length,0);assert.equal(tasks.size,0);
 for(const events of [doc,win,motion])for(const listeners of events.listeners.values())assert.equal(listeners.size,0);
 // Integration: actual RSVP handler enters confirmation then starts one fresh effect.
@@ -56,10 +54,10 @@ assert.match(css,/\.animations-paused[^}]*animation-play-state:paused/);
 assert.match(css,/#effects\{[^}]*pointer-events:none;z-index:0/);
 assert.match(css,/main,footer\{position:relative;z-index:1/);
 assert.match(css,/\.firework-spark\{[^}]*opacity:0[^}]*animation:firework-burst 1.2s/);
-assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/\.firework-spark\{display:none/);
+assert.doesNotMatch(css,/prefers-reduced-motion|celebration-still/);
 assert.doesNotMatch(readFileSync(new URL('../animations.js',import.meta.url),'utf8'),/requestAnimationFrame|setInterval|canvas/);
 for(const [width,height] of [[320,568],[375,667],[390,844],[400,909],[430,932],[1280,720],[1920,1080]]){
  const r=Math.min(56,width*.1,height*.07);
  for(const [x,y] of [[.12,.18],[.88,.20],[.12,.82],[.88,.80]])assert.ok(x*width-r>=0&&x*width+r<=width&&y*height-r>=0&&y*height+r<=height);
 }
-console.log('PASS: HTML ECG initialization/scene lifecycle, finite RSVP bursts, repeat replacement, visibility/bfcache pause-resume, timer/DOM/listener cleanup, live reduced-motion alternative, unchanged RSVP storage, seven-viewport burst budgets. DOM/timers are mocked; rendered movement requires browser execution.');
+console.log('PASS: HTML ECG initialization/scene lifecycle, finite RSVP bursts, repeat replacement, visibility/bfcache pause-resume, timer/DOM/listener cleanup, motion-preference independence, unchanged RSVP storage, seven-viewport burst budgets. DOM/timers are mocked; rendered movement requires browser execution.');
