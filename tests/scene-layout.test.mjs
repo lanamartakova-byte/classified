@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+const clean=css.replace(/\/\*[\s\S]*?\*\//g,'');
+const rules=selector=>[...clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(match=>match[1].trim()===selector).map(match=>match[2]);
+for(const selector of ['html','body','main','.scene','.intro','.final-scene','.card-viewport','.card-stage','.invitation-actions','.final-controls','.confirmation-scene','.confirmation','.card-copy','.card-message','.event']){
+ assert.equal(rules(selector).length,1,`${selector}: competing layout definitions`);
+}
+assert.match(rules('main')[0],/grid-template-columns:minmax\(0,1fr\)/);
+assert.match(rules('.scene')[0],/width:100%/);
+assert.match(rules('.scene')[0],/min-width:0/);
+assert.doesNotMatch(rules('.final-scene')[0],/display:grid|container-type|grid-template-rows/);
+assert.match(rules('.final-scene')[0],/align-items:stretch/);
+assert.match(rules('.card-viewport')[0],/flex:1 1 0/);
+assert.match(rules('.card-viewport')[0],/width:100%/);
+assert.match(rules('.card-viewport')[0],/min-height:0/);
+assert.match(rules('.card-viewport')[0],/container-type:size/);
+assert.match(rules('.card-stage')[0],/width:min\(100%,calc\(100cqh\*\.6666666667\)\)/);
+assert.match(rules('.invitation-actions')[0],/grid-template-columns:minmax\(0,1fr\)/);
+assert.doesNotMatch(rules('.invitation-actions')[0],/(?:^|;)height:/);
+assert.match(rules('.final-controls')[0],/width:100%/);
+assert.match(rules('.confirmation')[0],/width:100%;max-width:32ch/);
+assert.match(rules('.confirmation')[0],/text-align:center/);
+assert.match(rules('.confirmation-scene')[0],/align-items:center/);
+assert.match(rules('.invitation-actions')[0],/min-height:48px/);
+assert.doesNotMatch(css,/100cqh\s*-\s*108px|grid-row:3|height:78px|min-width:360px|grid-template-columns:1\.15fr/);
+const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+assert.match(app,/class="card-viewport"><div class="card-stage"/);
+assert.match(app,/class="invitation-actions"><p class="tap-label"/);
+const browser=readFileSync(new URL('./safe-layout.browser.js',import.meta.url),'utf8');
+for(const size of ['320,568','375,667','390,844','400,909','430,932'])assert.ok(browser.includes(size));
+for(const stage of ['Introduction','Detector question','Detector verdict','Security report','Safe puzzle','safe opening','Invitation front','Invitation back / celebration','RSVP confirmation'])assert.ok(browser.includes(stage));
+for(const renderedAPI of ['getBoundingClientRect','getClientRects','scrollHeight','scrollWidth','elementFromPoint'])assert.ok(browser.includes(renderedAPI));
+console.log('PASS: consolidated scene/card/footer rules, explicit full-width tracks, definite artwork slot, intrinsic confirmation height, preserved markup flow, and five-viewport/all-scene rendered regression coverage. Browser execution remains separate.');

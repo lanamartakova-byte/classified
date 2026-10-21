@@ -1,22 +1,16 @@
 import {readFileSync} from 'node:fs';
-import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {guests, defaultGreeting, event} from '../config.js';
-const source=readFileSync(new URL('../app.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,'');
-function boot(search='',persist=new Map()){
- const elements=new Map(),calls=[];
- const el=()=>({innerHTML:'',textContent:'',hidden:false,disabled:false,dataset:{},classList:{values:new Set(),add(x){this.values.add(x)},remove(x){this.values.delete(x)},contains(x){return this.values.has(x)}},focus(){},setAttribute(){},querySelectorAll(){return[]},addEventListener(){},insertAdjacentHTML(_,html){this.innerHTML+=html}});
- const get=s=>{if(!elements.has(s))elements.set(s,el());return elements.get(s)};
- const ctx=vm.createContext({guests,defaultGreeting,event,AudioController:class{enabled=true;sfx(x){calls.push(x||'click')}start(x){calls.push(x)}toggle(){this.enabled=!this.enabled}},document:{querySelector:get,querySelectorAll:()=>[],body:el(),addEventListener(){}},localStorage:{getItem:k=>persist.get(k),setItem:(k,v)=>persist.set(k,v)},location:{search},URLSearchParams,matchMedia:()=>({matches:true}),Image:class{},console,window:{scrollTo(){}},setTimeout:fn=>{fn();return 1},clearTimeout(){}});
- vm.runInContext(source,ctx);return {run:s=>vm.runInContext(s,ctx),elements,get,calls,persist};
-}
+import {boot} from './helpers.mjs';
+const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+
 for(const choice of [0,1]){
  const t=boot('?guest=mama');assert.match(t.get('#main').innerHTML,/Мамочка!/);t.run('detector()');
  for(let q=0;q<3;q++){assert.match(t.get('#main').innerHTML,new RegExp(`ВОПРОС ${q+1} / 3`));t.run(`answer(${choice})`);assert.match(t.get('#answer-area').innerHTML,/Продолжить/);assert.equal(t.run('answered'),true);if(q<2)t.run('question++;detector()');}
  t.run('report()');assert.match(t.get('#main').innerHTML,/Обнаружена аномалия/);t.run('safe();keypad("1");keypad("2");keypad("enter")');assert.match(t.get('.safe-status').textContent,/Код не подошёл/);assert.equal(t.run('locked'),false);
  t.run('keypad("4");keypad("delete")');assert.equal(t.run('code'),'');t.run('keypad("4");keypad("5");keypad("enter")');assert.equal(t.run('stage'),'invitation');assert.equal(t.run('locked'),true);
  t.run('flip()');assert.equal(t.get('.card').classList.contains('flipped'),true);assert.match(t.get('#main').innerHTML,/15 ноября 2026/);assert.equal(t.calls.includes('celebration'),true);
- t.run("saved.rsvp=true;save('invitation');finalControls()");assert.match(t.get('.final-controls').innerHTML,/Ура!/);
+ t.run("saved.rsvp=true;save('invitation');finalControls()");assert.match(t.get('.final-controls').innerHTML,/Посмотреть подтверждение/);t.run('confirmation()');assert.equal(t.run('stage'),'confirmation');assert.match(t.get('#main').innerHTML,/Ура!/);assert.doesNotMatch(t.get('#main').innerHTML,/class="card-stage"/);
  const returning=boot('?guest=mama',t.persist);assert.match(returning.get('#main').innerHTML,/Посмотреть приглашение/);
  const papa=boot('?guest=papa',t.persist);assert.match(papa.get('#main').innerHTML,/Папочка!/);assert.doesNotMatch(papa.get('#main').innerHTML,/Посмотреть приглашение/);
  t.run("saved={rsvp:saved.rsvp};question=0;detector()");assert.equal(t.run('saved.rsvp'),true);assert.equal(t.run('saved.progress'),'detector');
