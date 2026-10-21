@@ -1,0 +1,15 @@
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const listeners={},store=new Map(),players=[];let now=1000;
+const context=vm.createContext({Audio:class{constructor(src){this.src=src;this.volume=1;this.currentTime=0;this.paused=true;players.push(this)}addEventListener(){}play(){this.paused=false;return Promise.resolve()}pause(){this.paused=true}},document:{hidden:false,addEventListener:(name,fn)=>listeners[name]=fn},console,performance:{now:()=>now},requestAnimationFrame:fn=>{now+=1000;fn(now);return 1},cancelAnimationFrame(){}});
+vm.runInContext(readFileSync(new URL('../audio.js',import.meta.url),'utf8').replace('export class','class')+'\nglobalThis.Controller=AudioController;',context);
+const controller=new context.Controller({get:k=>store.get(k),set:(k,v)=>store.set(k,v)});
+assert.equal(players.length,0);
+controller.start('spy');await Promise.resolve();assert.equal(players[0].volume,.18);
+controller.sfx('click');assert.equal(players[1].volume,.25);now+=200;controller.sfx('key');assert.equal(players[1].paused,true);assert.equal(players[2].volume,.35);
+now+=200;controller.sfx('transition');assert.equal(players[3].volume,.28);
+controller.start('celebration');await Promise.resolve();assert.equal(players[0].paused,true);assert.equal(players[4].volume,.30);assert.equal(players.length,5);
+controller.toggle();assert.equal(store.get('op45:sound'),'off');assert.equal(players.every(p=>p.paused),true);const n=players.length;controller.sfx();assert.equal(players.length,n);
+controller.toggle();await Promise.resolve();context.document.hidden=true;listeners.visibilitychange();assert.equal(players.every(p=>p.paused),true);context.document.hidden=false;listeners.visibilitychange();await Promise.resolve();assert.equal(players[4].paused,false);
+console.log('PASS: lazy loading, all five audio mappings, separate levels, effect interruption, music fade targets, mute persistence, visibility pause/resume. Audio is mocked; actual browser playback is unverified.');
