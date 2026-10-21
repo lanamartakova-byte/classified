@@ -39,7 +39,7 @@ click({key:'delete'});assert.equal(visitor.run('code'),'4');
 click({key:'delete'});assert.equal(visitor.run('code'),'');
 click({key:'9'});click({key:'8'});click({key:'enter'});
 assert.equal(visitor.run('stage'),'safe');assert.equal(visitor.run('locked'),false);
-assert.match(visitor.get('.safe-status').textContent,/Код не подошёл/);
+assert.equal(visitor.get('.safe-status').textContent,'');
 assert.doesNotMatch(visitor.get('.safe-status').textContent,/45/);
 assert.equal(visitor.get('.safe-art').classList.contains('unlocked'),false);
 const keydown=(key,repeat=false)=>{clock.time+=250;let prevented=false;visitor.documentListeners.keydown({key,repeat,target:visitor.get('#main'),preventDefault(){prevented=true}});return prevented;};

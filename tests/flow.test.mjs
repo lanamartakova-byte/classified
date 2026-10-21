@@ -7,7 +7,7 @@ const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 for(const choice of [0,1]){
  const t=boot('?guest=mama');assert.match(t.get('#main').innerHTML,/Мамочка!/);t.run('detector()');
  for(let q=0;q<3;q++){assert.match(t.get('#main').innerHTML,new RegExp(`ВОПРОС ${q+1} / 3`));t.run(`answer(${choice})`);assert.match(t.get('#answer-area').innerHTML,/Продолжить/);assert.equal(t.run('answered'),true);if(q<2)t.run('question++;detector()');}
- t.run('report()');assert.match(t.get('#main').innerHTML,/Обнаружена аномалия/);t.run('safe();keypad("1");keypad("2");keypad("enter")');assert.match(t.get('.safe-status').textContent,/Код не подошёл/);assert.equal(t.run('locked'),false);
+ t.run('report()');assert.match(t.get('#main').innerHTML,/Обнаружена аномалия/);t.run('safe();keypad("1");keypad("2");keypad("enter")');assert.equal(t.get('.safe-status').textContent,'');assert.equal(t.run('locked'),false);
  t.run('keypad("4");keypad("delete")');assert.equal(t.run('code'),'');t.run('keypad("4");keypad("5");keypad("enter")');assert.equal(t.run('stage'),'invitation');assert.equal(t.run('locked'),true);
  t.run('flip()');assert.equal(t.get('.card').classList.contains('flipped'),true);assert.match(t.get('#main').innerHTML,/15 ноября 2026/);assert.equal(t.calls.includes('celebration'),true);
  t.run("saved.rsvp=true;save('invitation');finalControls()");assert.match(t.get('.final-controls').innerHTML,/Посмотреть подтверждение/);t.run('confirmation()');assert.equal(t.run('stage'),'confirmation');assert.match(t.get('#main').innerHTML,/Ура!/);assert.doesNotMatch(t.get('#main').innerHTML,/class="card-stage"/);

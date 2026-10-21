@@ -37,7 +37,7 @@ function scenario(failure){
  fault=true;
  if(failure==='create')app.run('delete audio.players.key');
  assert.doesNotThrow(()=>press('enter'),`${failure}: effect failure must not abort wrong-code reset`);
- assert.equal(app.run('code'),'');assert.match(app.get('.safe-status').textContent,/Код не подошёл/);
+ assert.equal(app.run('code'),'');assert.equal(app.get('.safe-status').textContent,'');
  assert.equal(app.get('.code-display').textContent,'— —');assert.equal(app.get('#first-riddle').hidden,false);
  assert.equal(app.run('locked'),false);assert.equal(app.run('loadingJob'),null);assert.equal(app.run('stage'),'safe');
  assert.equal(pending.size,0,'Wrong code must schedule no reset/reveal timer');

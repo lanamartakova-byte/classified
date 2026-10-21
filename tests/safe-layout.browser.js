@@ -182,7 +182,7 @@ async function runViewport(width,height){
   check(!doc.querySelector('.unlocked'),'Code entry auto-opened safe');
   await inspectScene(doc,win,width,height,'Integrated OK guidance');
   key('enter');check(!doc.querySelector('.safe-art.unlocked'),'Wrong code opened safe');
-  check(doc.querySelector('.safe-status').textContent.includes('Код не подошёл'),'Missing wrong-code feedback');
+  check(doc.querySelector('.safe-status').textContent==='','Wrong code must clear without a message');
   const originalSafe=doc.querySelector('.safe-art');
   for(const wrong of ['98','12','98']){
    for(const digit of wrong){
@@ -200,6 +200,9 @@ async function runViewport(width,height){
   }
   doc.dispatchEvent(new win.KeyboardEvent('keydown',{key:'Backspace',bubbles:true,cancelable:true}));
   check(doc.querySelector('.code-display').textContent==='— —','Keyboard Backspace failed');
+  key('1');key('2');key('enter');
+  check(doc.querySelector('.code-display').textContent==='— —'&&doc.querySelector('.safe-status').textContent==='','One OK must clear 12 silently');
+  check(doc.querySelector('.safe-art')===originalSafe,'Rejected OK reset scene');
   key('4');key('5');
   check(!doc.querySelector('.unlocked'),'45 auto-opened safe');
   const ok=doc.querySelector('[data-key="enter"]');ok.click();ok.click();

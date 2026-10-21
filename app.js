@@ -119,11 +119,10 @@ function keypad(value, interaction=false){
     if(lastSafeInput.value===value&&now-lastSafeInput.time<220)return;
     lastSafeInput={value,time:now};
   }
+  // A rejected OK is the same immediate, silent reset as C.
+  if(value==='enter' && code!=='45')value='clear';
   if(value==='enter'){
-    audio.sfx('key');
-    if(code==='45'){unlock();return;}
-    document.querySelector('.safe-status').textContent='Код не подошёл. Попробуй ещё — попытки не ограничены.';
-    code='';
+    audio.sfx('key');unlock();return;
   }else if(value==='clear'){audio.sfx('key');code='';document.querySelector('.safe-status').textContent='';}
   else if(value==='delete'){audio.sfx('key');code=code.slice(0,-1);document.querySelector('.safe-status').textContent='';}
   else if(code.length<2){audio.sfx('key');code+=value;document.querySelector('.safe-status').textContent='';}
