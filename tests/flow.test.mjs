@@ -6,7 +6,13 @@ const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 
 for(const choice of [0,1]){
  const t=boot('?guest=mama');assert.match(t.get('#main').innerHTML,/Мамочка!/);t.run('detector()');
- for(let q=0;q<3;q++){assert.match(t.get('#main').innerHTML,new RegExp(`ВОПРОС ${q+1} / 3`));t.run(`answer(${choice})`);assert.match(t.get('#answer-area').innerHTML,/Продолжить/);assert.equal(t.run('answered'),true);if(q<2)t.run('question++;detector()');}
+ for(let q=0;q<12;q++){
+  assert.match(t.get('#main').innerHTML,new RegExp(`ВОПРОС ${q+1} / 12`));
+  const right=t.run('questions[question].correct');
+  t.run(`answer(${(right+choice+1)%4})`);assert.equal(t.get('#quiz-feedback').textContent,'Подумай ещё!');assert.equal(t.run('question'),q);
+  t.run(`answer(${right})`);
+ }
+ assert.equal(t.run('stage'),'quiz-complete');
  t.run('report()');assert.match(t.get('#main').innerHTML,/Обнаружена аномалия/);t.run('safe();keypad("1");keypad("2");keypad("enter")');assert.equal(t.get('.safe-status').textContent,'');assert.equal(t.run('locked'),false);
  t.run('keypad("4");keypad("delete")');assert.equal(t.run('code'),'');t.run('keypad("4");keypad("5");keypad("enter")');assert.equal(t.run('stage'),'invitation');assert.equal(t.run('locked'),true);
  t.run('flip()');assert.equal(t.get('.card').classList.contains('flipped'),true);assert.match(t.get('#main').innerHTML,/15 ноября 2026/);assert.equal(t.calls.includes('celebration'),true);
@@ -18,7 +24,7 @@ for(const choice of [0,1]){
 for(const search of ['', '?guest=unknown','?guest=%3Cscript%3E'])assert.match(boot(search).get('#main').innerHTML,/Дорогой мой человек!/);
 assert.equal(readFileSync(new URL('../styles.css',import.meta.url),'utf8').includes('prefers-reduced-motion'),false);
 assert.equal(source.includes('invitation_preview.png'),false);
-console.log('PASS: both answer paths, verdict gates, report, wrong/correct code, deletion, unlock, flip, event copy, RSVP, returning guests, guest isolation, restart state, neutral fallback, preference-independent animation rules, reference exclusion.');
+console.log('PASS: all 12 answer gates and completion, report, wrong/correct code, deletion, unlock, flip, event copy, RSVP, returning guests, guest isolation, restart state, neutral fallback, preference-independent animation rules, reference exclusion.');
 
 const expected = {
   mama: 'Мамочка!', papa: 'Папочка!', tamara: 'Тамара!', zhanna: 'Жанна!',
@@ -60,7 +66,7 @@ assert.doesNotMatch(shell, /45|045/);
 const puzzle = boot('?guest=nina');
 const noSpoiler = () => assert.doesNotMatch(puzzle.get('#main').innerHTML, />[^<]*45[^<]*</);
 noSpoiler();
-for (let i = 0; i < 3; i++) { puzzle.run(`question=${i};detector()`); noSpoiler(); puzzle.run('answer(0)'); }
+for (let i = 0; i < 12; i++) { puzzle.run(`question=${i};detector()`); noSpoiler(); puzzle.run('answer(questions[question].correct)'); }
 puzzle.run('report()'); noSpoiler();
 puzzle.run('safe()'); noSpoiler();
 assert.match(puzzle.get('#main').innerHTML, /СЕКРЕТНЫЙ КОД СОСТОИТ ИЗ ДВУХ ЦИФР/);

@@ -4,7 +4,7 @@ export class SceneAnimations {
     clock=globalThis.performance,schedule=(fn,delay)=>globalThis.setTimeout(fn,delay),cancel=id=>globalThis.clearTimeout(id)}={}) {
     this.document=document;this.window=window;this.clock=clock;
     this.schedule=schedule;this.cancel=cancel;this.box=document.querySelector('#effects');
-    this.scene='';this.timer=null;this.remaining=0;this.celebrating=false;
+    this.quizBox=null;this.onComplete=null;this.scene='';this.timer=null;this.remaining=0;this.celebrating=false;this.onComplete=null;
     this.pageHidden=false;this.paused=false;
     this.onVisibility=()=>this.syncVisibility();
     this.onPageHide=()=>{this.pageHidden=true;this.syncVisibility();};
@@ -15,7 +15,7 @@ export class SceneAnimations {
     this.syncVisibility();
   }
   setScene(scene) {
-    this.stopCelebration();this.scene=scene;this.labelECG();this.syncVisibility();
+    this.stopCelebration();this.scene=scene;this.quizBox=scene==='detector'?this.document.querySelector('#quiz-effects'):null;this.labelECG();this.syncVisibility();
   }
   labelECG() {
     if(this.scene!=='detector')return;
@@ -36,7 +36,7 @@ export class SceneAnimations {
   }
   armCleanup() {
     this.started=this.clock.now();
-    this.timer=this.schedule(()=>{this.timer=null;this.stopCelebration();},this.remaining);
+    this.timer=this.schedule(()=>{this.timer=null;const complete=this.onComplete;this.stopCelebration();complete?.();},this.remaining);
   }
   celebrate() {
     this.stopCelebration();
@@ -63,10 +63,25 @@ export class SceneAnimations {
     this.remaining=3200;
     if(!this.paused)this.armCleanup();
   }
+  celebrateQuiz(onComplete) {
+    this.stopCelebration();
+    if(this.scene!=='detector'||!this.quizBox)return;
+    this.celebrating=true;this.onComplete=onComplete;
+    const width=this.quizBox.clientWidth||this.window.innerWidth,height=this.quizBox.clientHeight||this.window.innerHeight;
+    const radius=Math.min(44,width*.11,height*.10),fragment=this.document.createDocumentFragment();
+    for(const x of [.22,.78])for(let ray=0;ray<12;ray++){
+      const spark=this.document.createElement('i'),angle=ray*Math.PI/6;
+      spark.className='quiz-spark';spark.style.left=`${x*100}%`;spark.style.top='88%';
+      spark.style.setProperty('--dx',`${Math.cos(angle)*radius}px`);spark.style.setProperty('--dy',`${Math.sin(angle)*radius}px`);
+      spark.style.animationDelay=x===.22?'0s':'.15s';fragment.append(spark);
+    }
+    this.quizBox.append(fragment);this.remaining=1800;
+    if(!this.paused)this.armCleanup();
+  }
   stopCelebration() {
     if(this.timer!==null)this.cancel(this.timer);
-    this.timer=null;this.remaining=0;this.celebrating=false;
-    this.box.replaceChildren();
+    this.timer=null;this.remaining=0;this.celebrating=false;this.onComplete=null;
+    this.box.replaceChildren();this.quizBox?.replaceChildren();
   }
   destroy() {
     this.stopCelebration();

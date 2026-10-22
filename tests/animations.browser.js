@@ -1,3 +1,4 @@
+import {questions} from '../quiz.js?v=family-quiz-v12';
 const sizes=[[320,568],[375,667],[390,844],[400,909],[430,932],[1280,720],[1920,1080]];
 const output=document.querySelector('#results');
 const check=(ok,message)=>{if(!ok)throw Error(message)};
@@ -50,10 +51,17 @@ async function run(width,height){
   }
   output.textContent+=`  ${width}×${height}: ECG ${'screen x '+start.x.toFixed(1)+' → '+end.x.toFixed(1)}.\n`;
   await inspect(`${width}×${height} detector`);
-  for(let question=0;question<3;question++){
-   click('[data-answer="0"]');check(doc.querySelector('.ecg.answered'),'Answer color state lost');
-   click('[data-action="continue"]');
+  for(let question=0;question<questions.length;question++){
+   await waitFor(()=>doc.querySelector('.panel-top span')?.textContent===`ВОПРОС ${question+1} / 12`&&doc.querySelector('[data-answer]:not(:disabled)'),`quiz question ${question+1}`);
+   click(`[data-answer="${questions[question].correct}"]`);check(doc.querySelector('.ecg.answered'),'Answer color state lost');
+   check(doc.querySelectorAll('.quiz-spark').length===24,'Missing compact quiz fireworks');
+   if(question===0){
+    const spark=doc.querySelector('.quiz-spark');await sleep(180);const a=spark.getBoundingClientRect();await sleep(300);const b=spark.getBoundingClientRect();
+    check(Math.abs(a.x-b.x)+Math.abs(a.y-b.y)>2,'Quiz fireworks are frozen');
+   }
   }
+  await waitFor(()=>doc.querySelector('main').dataset.stage==='quiz-complete','quiz completion');
+  click('[data-action="continue"]');
   check(!doc.querySelector('.ecg-track'),'ECG survived leaving detector');
   click('[data-action="safe"]');await waitFor(()=>doc.querySelector('[data-key="4"]'),'safe');
   click('[data-key="4"]');click('[data-key="5"]');click('[data-key="enter"]');

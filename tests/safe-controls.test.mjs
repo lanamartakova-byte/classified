@@ -13,7 +13,8 @@ const click=(dataset,advance=250)=>{
 const assertSingleStage=()=>assert.equal((visitor.get('#main').innerHTML.match(/<section\b/g)||[]).length,1);
 assert.match(visitor.get('#main').innerHTML,/Катя!/);assertSingleStage();
 click({action:'accept'});assert.equal(visitor.get('#main').dataset.stage,'detector');
-for(let i=0;i<3;i++){assertSingleStage();click({answer:String(i%2)});click({action:'continue'});}
+for(let i=0;i<12;i++){assertSingleStage();click({answer:String(visitor.run('questions[question].correct'))});}
+assert.equal(visitor.run('stage'),'quiz-complete');click({action:'continue'});
 assert.equal(visitor.get('#main').dataset.stage,'report');click({action:'safe'});
 assert.equal(visitor.get('#main').dataset.stage,'safe');assertSingleStage();
 const markup=visitor.get('#main').innerHTML;

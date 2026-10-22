@@ -1,4 +1,5 @@
-import {SceneAnimations} from './animations.js?v=full-motion-v8';
+import {questions, quizVersion} from './quiz.js?v=family-quiz-v12';
+import {SceneAnimations} from './animations.js?v=family-quiz-v12';
 import {guests, defaultGreeting, event} from './config.js';
 import {AudioController} from './audio.js?v=audio-retry-v10';
 import {ImageLoader, sceneImages} from './assets.js?v=keypad-v6';
@@ -10,7 +11,7 @@ const key=`op45:guest:${encodeURIComponent(guestId)}`;
 let saved={};try{saved=JSON.parse(storage.get(key)||'{}')||{};}catch{}
 const audio=new AudioController(storage), main=document.querySelector('#main');
 const animations=new SceneAnimations();
-let stage='intro',question=0,answered=false,code='',locked=false,openingTimer;
+let stage='intro',question=0,answered=false,code='',locked=false,openingTimer,quizTurn=0;
 const artwork = new ImageLoader();
 let loadingJob = null;
 const confirmationStorageNote = 'Подтверждение сохранено только на этом устройстве.';
@@ -49,11 +50,6 @@ function attemptArtwork(job) {
   });
 }
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const questions=[
- ['Способны ли вы хранить секреты даже от самых близких?', ['Да. Я умею держать язык за зубами','Смотря насколько интересный секрет…'],['Секреты под надёжной защитой. Даже семейный чат ничего не узнает.','Обнаружено здоровое любопытство. Такие секреты стоит узнавать лично.']],
- ['Сможете ли вы сохранять самообладание перед столом, полным вкусной еды?', ['Конечно! У меня железная выдержка','А зачем подвергать себя таким испытаниям?'],['Выдержка впечатляет. Проверим её при встрече с праздничным столом.','Ответ принят. Служба безопасности тоже за вторую порцию.']],
- ['Если во время секретной операции внезапно заиграет музыка, ваши действия?', ['Немедленно приступлю к танцевальной разведке','Сначала оценю обстановку. Потом покажу класс!'],['Танцевальная разведка одобрена. Пароль на танцпол не потребуется.','Тактический подход! Лучшие движения оставлены для решающего момента.']]
-];
 function save(progress){saved={...saved,progress};storage.set(key,JSON.stringify(saved));}
 let compositionObserver;
 function fitComposition(){
@@ -87,8 +83,41 @@ const eyebrow=s=>`<div class="eyebrow">${s}</div>`;
 function updateSound(){const b=document.querySelector('#sound');b.textContent=`Звук: ${audio.enabled?'вкл.':'выкл.'}`;b.setAttribute('aria-pressed',String(audio.enabled));}
 document.querySelector('#sound').onclick=()=>{audio.toggle();updateSound();};updateSound();
 function intro(returning=false){stage='intro';document.body.classList.remove('celebration');render(`<section class="scene intro"><div class="intro-copy">${eyebrow('Личное дело · Особый допуск')}<p class="greeting">${esc(greeting)}</p><h1>У каждого<br>секрета есть<br><em>свой повод.</em></h1><p class="lead">${returning?'Твоё секретное приглашение уже ждёт. Можно открыть его сразу или снова отправиться на задание.':'На твоё имя поступило задание особой важности… Впереди — проверка, секретный код и кое-что очень личное.'}</p><div class="actions">${returning?'<button class="primary" data-action="direct">Посмотреть приглашение <span class="arrow">↗</span></button><button class="secondary" data-action="restart">Пройти операцию заново</button>':'<button class="primary" data-action="accept">ПРИНЯТЬ ЗАДАНИЕ <span class="arrow">→</span></button>'}</div><p class="small">${returning?'Доступ восстановлен на этом устройстве.':'Пара минут. Немного интриги. И только свои люди.'}</p></div><aside class="dossier" aria-label="Секретное дело"><div class="file-top"><span>ЛИЧНО В РУКИ</span><span>ЗАКРЫТЫЙ АРХИВ</span></div><div class="file-number" aria-hidden="true">◆</div><div class="stamp">СОВЕРШЕННО СЕКРЕТНО</div><div class="file-bottom">ОПЕРАЦИЯ ОСОБОЙ ВАЖНОСТИ<br>КРУГ ДОПУЩЕННЫХ: САМЫЕ БЛИЗКИЕ</div></aside></section>`);warmScene('intro',{returning});}
-function detector(){stage='detector';answered=false;save('detector');const q=questions[question];render(`<section class="scene">${eyebrow('Этап 01 · Проверка на детекторе')}<div class="panel"><div class="panel-top"><span>ВОПРОС ${question+1} / 3</span><span class="live">НА СВЯЗИ</span></div><div class="ecg"><div class="ecg-track"><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 55H70L83 48 95 62 115 55H155L168 54 178 25 190 85 203 10 215 70 228 55H320L335 45 350 55H500H570L583 48 595 62 615 55H655L668 54 678 25 690 85 703 10 715 70 728 55H820L835 45 850 55H1000" fill="none" stroke="currentColor" stroke-width="2"/></svg></div></div><h2>${q[0]}</h2><div id="answer-area" class="answers">${q[1].map((a,i)=>`<button class="answer" data-answer="${i}">${a}</button>`).join('')}</div></div><p class="small">Отвечай спокойно. Здесь нет неправильных ответов.</p></section>`);warmScene('detector',{question});}
-function answer(i){if(answered)return;answered=true;audio.sfx();document.querySelector('.ecg').classList.add('answered');document.querySelector('#answer-area').innerHTML=`<div class="verdict" role="status">${questions[question][2][i]}</div><button class="primary" data-action="continue">Продолжить →</button>`;}
+function quizNext(){
+  const q=saved.quiz;
+  return q?.version===quizVersion&&Number.isInteger(q.next)&&q.next>=0&&q.next<=questions.length?q.next:0;
+}
+function detector(){
+  stage='detector';answered=false;quizTurn++;
+  saved.quiz={version:quizVersion,next:question};save('detector');
+  const q=questions[question];
+  render(`<section class="scene quiz-scene">${eyebrow('Этап 01 · Проверка на детекторе')}<div class="panel"><div id="quiz-effects" aria-hidden="true"></div><div class="panel-top"><span>ВОПРОС ${question+1} / ${questions.length}</span><span class="live">НА СВЯЗИ</span></div><div class="ecg"><div class="ecg-track"><svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 55H70L83 48 95 62 115 55H155L168 54 178 25 190 85 203 10 215 70 228 55H320L335 45 350 55H500H570L583 48 595 62 615 55H655L668 54 678 25 690 85 703 10 715 70 728 55H820L835 45 850 55H1000" fill="none" stroke="currentColor" stroke-width="2"/></svg></div></div><h2>${esc(q.text)}</h2><div id="answer-area" class="answers">${q.answers.map((a,i)=>`<button class="answer" data-answer="${i}">${['А','Б','В','Г'][i]}) ${esc(a)}</button>`).join('')}</div><p id="quiz-feedback" class="quiz-feedback" role="status" aria-live="polite"></p></div><p class="small">Семейное досье · Проверка знаний</p></section>`);
+  warmScene('detector',{question});
+}
+function answer(i){
+  if(stage!=='detector'||answered||!Number.isInteger(i)||i<0||i>3)return;
+  audio.sfx();
+  const q=questions[question],feedback=document.querySelector('#quiz-feedback');
+  if(i!==q.correct){
+    feedback.textContent='Подумай ещё!';feedback.classList.remove('quiz-retry');
+    void feedback.offsetWidth;feedback.classList.add('quiz-retry');return;
+  }
+  answered=true;
+  document.querySelector('.ecg').classList.add('answered');
+  document.querySelectorAll('[data-answer]').forEach(button=>button.disabled=true);
+  feedback.classList.remove('quiz-retry');feedback.classList.add('quiz-praise');feedback.textContent=q.praise;
+  const index=question,turn=quizTurn;
+  saved.quiz={version:quizVersion,next:index+1};save('detector');
+  animations.celebrateQuiz(()=>{
+    if(stage!=='detector'||question!==index||turn!==quizTurn||!answered)return;
+    question++;
+    if(question<questions.length)detector();else quizComplete();
+  });
+}
+function quizComplete(){
+  stage='quiz-complete';save('quiz-complete');
+  render(`<section class="scene quiz-complete-scene">${eyebrow('МИССИЯ ВЫПОЛНЕНА')}<div class="panel"><h2>Блестящая работа!</h2><p class="lead">Все испытания пройдены!<br>Ты отлично знаешь нашу семью.</p><p class="lead quiz-next">Пора перейти к следующему этапу секретной операции!</p><div class="actions"><button class="primary" data-action="continue">ПРОДОЛЖИТЬ ОПЕРАЦИЮ</button></div></div></section>`);
+}
 function report(){stage='report';save('report');render(`<section class="scene report-scene">${eyebrow('Служба безопасности · Заключение')}<div class="panel"><div class="panel-top"><span>ЗАКРЫТЫЙ АРХИВ</span><span>ПРОВЕРКА ЗАВЕРШЕНА</span></div><h2>Среди своих.<br>Сомнений нет.</h2><p class="lead">${esc(greeting)} Проверка пройдена. Допуск к секретным материалам открыт.</p><div class="report-lines"><div>Надёжность <span>Подтверждена</span></div><div>Чувство юмора <span>В наличии</span></div><div>Статус <span>Особо близкий круг</span></div></div><p class="verdict">Обнаружена аномалия: подозрительно высокая готовность к хорошему времяпрепровождению.</p><div class="actions"><button class="primary" data-action="safe">К секретному сейфу →</button></div></div></section>`);warmScene('report');}
 function safe(){
   if(!artwork.ready('safeClosed'))return withArtwork(['safeClosed'],()=>safe());
@@ -158,7 +187,7 @@ function confirmation(){
 }
 
 function flip(){if(document.querySelector('.card').classList.contains('flipped'))return;audio.sfx('transition');audio.start('celebration');document.querySelector('.card').classList.add('flipped');document.querySelector('.card-front').disabled=true;document.querySelector('.card-front').setAttribute('aria-hidden','true');document.querySelector('.card-back').setAttribute('aria-hidden','false');document.querySelector('.tap-label').hidden=true;celebrate();setTimeout(finalControls,1000);}
-main.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||loadingJob)return;if(b.dataset.answer!==undefined){answer(Number(b.dataset.answer));return;}if(b.dataset.key){keypad(b.dataset.key,true);return;}switch(b.dataset.action){case'accept':case'restart':clearTimeout(openingTimer);saved={rsvp:saved.rsvp};question=0;audio.start('spy');audio.sfx('transition');detector();break;case'continue':audio.sfx(question===2?'transition':'click');if(question<2){question++;detector();}else report();break;case'safe':audio.sfx('transition');safe();break;case'flip':flip();break;case'direct':invitation(true);break;case'rsvp':if(stage!=='invitation'||saved.rsvp)return;audio.sfx();saved.rsvp=true;save('invitation');confirmation();break;case'confirmation':if(!saved.rsvp)return;audio.sfx();confirmation();break;}});
+main.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||loadingJob)return;if(b.dataset.answer!==undefined){answer(Number(b.dataset.answer));return;}if(b.dataset.key){keypad(b.dataset.key,true);return;}switch(b.dataset.action){case'accept':case'restart':clearTimeout(openingTimer);if(b.dataset.action==='restart'){saved={rsvp:saved.rsvp};question=0;}else question=quizNext();audio.start('spy');audio.sfx('transition');if(question<questions.length)detector();else quizComplete();break;case'continue':if(stage!=='quiz-complete'||question!==questions.length)return;audio.sfx('transition');report();break;case'safe':audio.sfx('transition');safe();break;case'flip':flip();break;case'direct':invitation(true);break;case'rsvp':if(stage!=='invitation'||saved.rsvp)return;audio.sfx();saved.rsvp=true;save('invitation');confirmation();break;case'confirmation':if(!saved.rsvp)return;audio.sfx();confirmation();break;}});
 document.addEventListener('keydown',e=>{
   if(stage!=='safe'||locked||loadingJob||e.altKey||e.ctrlKey||e.metaKey)return;
   if(e.repeat){e.preventDefault();return;}
@@ -170,4 +199,4 @@ document.addEventListener('keydown',e=>{
 artwork.ensure('office', true).then(url => {
   document.querySelector('.ambience').style.setProperty('--office-image', `url("${url}")`);
 }).catch(() => { document.querySelector('#asset-error').hidden = false; });
-intro(Boolean(saved.progress));
+intro(Boolean(saved.rsvp||['invitation','unlocked'].includes(saved.progress)));

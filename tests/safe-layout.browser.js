@@ -1,6 +1,7 @@
+import {questions} from '../quiz.js?v=family-quiz-v12';
 import {safeKeys,safeDisplay,safeGeometry as geometry,safeFit} from '../safe-controls.js?v=keypad-v6';
 import {imageAssets} from '../assets.js?v=keypad-v6';
-const sizes=[[320,568],[375,667],[390,844],[400,909],[430,932]];
+const sizes=[[320,568],[375,667],[390,844],[400,909],[430,932],[1280,720],[1920,1080]];
 const check=(condition,message)=>{if(!condition)throw new Error(message)};
 const near=(actual,expected,label,tolerance=1.5)=>check(Math.abs(actual-expected)<=tolerance,`${label}: ${actual.toFixed(2)} vs ${expected.toFixed(2)}`);
 const waitFor=async(test,label,timeout=60000)=>{
@@ -17,12 +18,14 @@ function noScroll(doc,win){
  check(doc.body.getBoundingClientRect().height<=win.innerHeight+1,'Body exceeds viewport height');
 }
 async function inspectScene(doc,win,width,height,label,resize=true){
+ const quizCelebrating=resize&&doc.querySelector('.quiz-praise')&&doc.querySelector('main').dataset.stage==='detector';
+ if(quizCelebrating)win.dispatchEvent(new win.Event('pagehide'));
  await new Promise(resolve=>win.requestAnimationFrame(()=>win.requestAnimationFrame(resolve)));
  noScroll(doc,win);
  check(doc.querySelectorAll('main>.scene').length===1,`${label}: multiple active scenes`);
  const scene=doc.querySelector('main>.scene');
  visible(scene.getBoundingClientRect(),width,height,`${label} scene`);
- check(scene.getBoundingClientRect().width>=width*.85,`${label}: narrow scene column`);
+ check(scene.getBoundingClientRect().width>=Math.min(width*.85,parseFloat(win.getComputedStyle(scene).maxWidth)||width),`${label}: narrow scene column`);
  const panel=doc.querySelector('.panel');
  if(panel){
   const box=panel.getBoundingClientRect();visible(box,width,height,`${label}: both panel borders`);
@@ -65,6 +68,7 @@ async function inspectScene(doc,win,width,height,label,resize=true){
   const next=document.querySelector('#next');next.hidden=false;next.textContent=`Continue after reviewing ${width}×${height}: ${label}`;
   await new Promise(resolve=>next.onclick=()=>{next.onclick=null;next.hidden=true;resolve()});
  }
+ if(quizCelebrating)win.dispatchEvent(new win.Event('pageshow'));
 }
 function invitationGeometry(doc,win,width,height,label){
  const scene=doc.querySelector('.final-scene').getBoundingClientRect();
@@ -136,12 +140,30 @@ async function runViewport(width,height){
   const style=doc.createElement('style');style.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';doc.head.append(style);
   await inspectScene(doc,win,width,height,'Introduction');
   doc.querySelector('[data-action="accept"]').click();
-  for(let i=0;i<3;i++){
-   await waitFor(()=>doc.querySelector('[data-answer="0"]'),`question ${i+1}`);
-   await inspectScene(doc,win,width,height,`Detector question ${i+1}`);doc.querySelector('[data-answer="0"]').click();
-   await inspectScene(doc,win,width,height,`Detector verdict ${i+1}`);
-   doc.querySelector('[data-action="continue"]').click();
+  for(let i=0;i<questions.length;i++){
+   const q=questions[i];
+   await waitFor(()=>doc.querySelector('.panel-top span')?.textContent===`ВОПРОС ${i+1} / 12`&&doc.querySelector('[data-answer]:not(:disabled)'),`question ${i+1}`);
+   check(doc.querySelector('.panel h2').textContent===q.text,'Exact question text/order');
+   const buttons=[...doc.querySelectorAll('[data-answer]')];
+   check(buttons.length===4,'Four quiz answers required');
+   buttons.forEach((button,index)=>{
+    check(button.textContent===`${['А','Б','В','Г'][index]}) ${q.answers[index]}`,'Exact answer order/text');
+    check(button.getBoundingClientRect().height>=44,'Quiz touch target below 44px');
+   });
+   await inspectScene(doc,win,width,height,`Detector question ${i+1}`);
+   doc.querySelector(`[data-answer="${(q.correct+1)%4}"]`).click();
+   check(doc.querySelector('#quiz-feedback').textContent==='Подумай ещё!','Wrong answer feedback');
+   check(!doc.querySelector('.quiz-spark'),'Wrong answer triggered fireworks');
+   check(doc.querySelectorAll('[data-answer]:not(:disabled)').length===4,'Wrong answer disabled retry');
+   await inspectScene(doc,win,width,height,`Detector verdict retry ${i+1}`);
+   const correct=doc.querySelector(`[data-answer="${q.correct}"]`);correct.click();correct.click();
+   check(doc.querySelector('#quiz-feedback').textContent===q.praise,'Question-number praise');
+   check(doc.querySelectorAll('.quiz-spark').length===24,'Correct answer requires one compact burst');
+   await inspectScene(doc,win,width,height,`Detector praise ${i+1}`);
   }
+  await waitFor(()=>doc.querySelector('main').dataset.stage==='quiz-complete','Quiz completion');
+  await inspectScene(doc,win,width,height,'Quiz mission completion');
+  doc.querySelector('[data-action="continue"]').click();
   await inspectScene(doc,win,width,height,'Security report');
   doc.querySelector('[data-action="safe"]').click();
   await waitFor(()=>doc.querySelectorAll('.safe-key').length===12,'integrated safe');
@@ -153,7 +175,7 @@ async function runViewport(width,height){
   const slot=doc.querySelector('.safe-layout').getBoundingClientRect(),art=doc.querySelector('.safe-art').getBoundingClientRect();
   check(image.complete&&image.naturalWidth===1046&&image.naturalHeight===1504,'Approved safe image is not ready');
   visible(imageRect,width,height,'Closed safe');
-  check(imageRect.width>=Math.min(width*.70,(slot.height-106)*.65),`Safe too small: ${imageRect.width.toFixed(1)}px`);
+  check(imageRect.width>=Math.min(width*.70,(slot.height-106)*.65,650*geometry.closed.width/geometry.width),`Safe too small: ${imageRect.width.toFixed(1)}px`);
   near(center(imageRect).x,width/2,'Closed safe centered horizontally');
   safeGeometry(doc,win,width,height);
   near(imageRect.width/imageRect.height,1046/1504,'Safe aspect ratio',.001);

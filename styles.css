@@ -66,6 +66,27 @@ footer{min-width:0;display:flex;align-items:center;gap:10px;padding:5px 16px max
 .report-scene .verdict{font-size:11.5px;line-height:1.35}
 .report-scene .actions{margin-top:12px}
 
+/* Family dossier: four touch-size answers, with reserved feedback space. */
+.quiz-scene .panel{position:relative;padding:clamp(12px,2dvh,22px);isolation:isolate}
+.quiz-scene .panel>:not(#quiz-effects){position:relative;z-index:1}
+.quiz-scene .panel-top{margin-bottom:10px}
+.quiz-scene .answers{gap:6px}
+.quiz-scene .answer{min-height:44px;padding:8px 12px}
+.quiz-scene .panel h2{font-size:clamp(20px,3dvh,28px);margin-bottom:10px}
+.quiz-scene>.small{margin-top:8px}
+.quiz-feedback{min-height:29px;margin:8px 0 0;color:var(--gold);font-size:15px;line-height:1.3;text-align:center}
+.quiz-praise{font:22px/1.3 Georgia,serif;color:#e5c784}
+.quiz-retry{animation:quiz-feedback .24s ease-out both}
+#quiz-effects{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.quiz-spark{position:absolute;width:3px;height:3px;border-radius:50%;background:#e5c784;opacity:0;box-shadow:0 0 5px #e5c78477;animation:firework-burst 1.5s ease-out both}
+.animations-paused .quiz-spark{animation-play-state:paused}
+.quiz-complete-scene .eyebrow{justify-content:center}
+.quiz-complete-scene .panel{text-align:center}
+.quiz-complete-scene h2{color:var(--gold)}
+.quiz-complete-scene .actions{justify-content:center}
+.quiz-next{margin-top:14px}
+@keyframes quiz-feedback{from{opacity:.55}to{opacity:1}}
+
 /* Safe: retain the repaired image-relative coordinate system and door space. */
 main[data-stage="safe"]{padding-inline:max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right))}
 .safe-scene{max-width:800px;justify-content:flex-start;align-items:stretch;text-align:center}
